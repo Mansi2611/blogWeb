@@ -1,0 +1,152 @@
+
+<!-- blogs -->
+import { useContext } from "react";
+import { AppContext } from "../context/AppContext";
+
+export default function Blogs() {
+  const { posts, loading } = useContext(AppContext);
+
+  return (
+    <div className="flex flex-col gap-y-10 my-4">
+      {loading ? (
+        <div className="min-h-[80vh] w-full flex justify-center items-center">
+          <p className="text-center font-bold text-3xl">Loading</p>
+        </div>
+      ) : posts.length === 0 ? (
+        <div className="min-h-[80vh] w-full flex justify-center items-center">
+          <p className="text-center font-bold text-3xl">No Blogs Found !</p>
+        </div>
+      ) : (
+        posts.map((post) => (
+          <div key={post.id} className="w-11/12 max-w-2xl mx-auto">
+            <p className="font-bold text-lg">{post.title}</p>
+            <p className="text-sm my-1">
+              By <span className="italic">{post.author}</span> on{" "}
+              <span className="font-semibold underline cursor-pointer">{post.category}</span>
+            </p>
+            <p className="text-sm">Posted On {post.date}</p>
+            <p className="mt-4 mb-2">{post.content}</p>
+            <div className="flex flex-wrap gap-x-2 items-center">
+              {post.tags.map((tag, index) => (
+                <span
+                  key={index}
+                  className="text-xs font-semibold underline text-blue-700 cursor-pointer">{`#${tag}`}</span>
+              ))}
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
+
+
+
+
+<!-- pagination -->
+
+import { useContext } from "react";
+import { AppContext } from "../context/AppContext";
+
+export default function Pagination() {
+  const { page, handlePageChange, totalPages } = useContext(AppContext);
+
+  if (!totalPages) return null;
+
+  return (
+    <div className="fixed bottom-0 inset-x-0 bg-white py-2 border-t-2 border-t-gray-300">
+      <div className="flex items-center gap-x-3 w-11/12 max-w-2xl mx-auto">
+        {page > 1 && (
+          <button
+            onClick={() => handlePageChange(page - 1)}
+            className="border-2 border-gray-300 py-1 px-4 rounded-md"
+          >
+            Previous
+          </button>
+        )}
+        {page < totalPages && (
+          <button
+            onClick={() => handlePageChange(page + 1)}
+            className="border-2 border-gray-300 py-1 px-4 rounded-md"
+          >
+            Next
+          </button>
+        )}
+        <p className="text-sm font-semibold ml-auto">
+          Page {page} of {totalPages}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+
+<!-- app  -->
+  import {  createContext, useState } from "react";
+import { baseUrl } from "../baseUrl";
+
+export const AppContext = createContext();
+
+
+// step1->create context
+export default function AppContextProvider({children}){
+  const [loading ,setLoading]=useState(false);
+  const[post,setPost ]=useState([])
+  const[page,setPage]=useState(1);
+  const [totalPages,setTotalPages]=useState(null);
+
+
+
+
+  // data filing
+  
+  async function fetchBlogPost(page=1){
+   setLoading(true);
+   const url = ` ${baseUrl}:page=${page}`;
+   try {
+    const result = await fetch(url);
+    const data = await result.json();
+    setPage(data.page);
+    setTotalPages(data.totalPages);
+    setPost(data.posts);
+    console.log(data);
+   } catch (error) {
+    console.log("error while fetching data");
+    setPage(1);
+    setTotalPages(null);
+    setPost([]);
+   }
+   setLoading(false);
+
+  }
+
+ function handlePageChange(page){
+  setPage(page);
+  fetchBlogPost(page)
+ }
+
+ 
+  // send values to other
+  const value={
+    loading ,
+    setLoading,
+    post,
+    setPost,
+    page,
+    setPage,
+    totalPages,
+    setTotalPages,
+    handlePageChange,
+    fetchBlogPost
+  }
+
+  // step-2 :provide context
+  // this syntax will be same for each of the context component 
+  return <AppContext.Provider value={value}>
+    {children}
+  </AppContext.Provider>
+}
+
+
+
